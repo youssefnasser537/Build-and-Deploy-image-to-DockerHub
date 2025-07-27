@@ -1,4 +1,4 @@
-name: Build and Deploy image to ACR
+name: Build and Deploy image to DockerHub
 on:
   workflow_dispatch:
 env:
