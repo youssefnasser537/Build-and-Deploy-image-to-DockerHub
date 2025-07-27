@@ -1,0 +1,42 @@
+name: Build and Deploy image to ACR
+on:
+  workflow_dispatch:
+env:
+  IMAGE_NAME: nginx-youssef
+  IMAGE_TAG: v1
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Docker Build
+        run: |
+          docker build -t ${{ vars.REG_URL }}/${{ vars.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }} .
+
+      - name: Docker Login
+        run: |
+          echo "${{ secrets.DOCKER_PASSWORD }}" | docker login ${{ vars.REG_URL }} \
+          --username ${{ vars.DOCKER_USERNAME }} --password-stdin
+
+      - name: Docker Push
+        run: |
+          docker push ${{ vars.REG_URL }}/${{ vars.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Docker Login
+        run: |
+          echo "${{ secrets.DOCKER_PASSWORD }}" | docker login ${{ vars.REG_URL }} \
+          --username ${{ vars.DOCKER_USERNAME }} --password-stdin
+
+      - name: Run Container
+        run: |
+          docker run -d -p 8080:80 \
+          ${{ vars.REG_URL }}/${{ vars.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
